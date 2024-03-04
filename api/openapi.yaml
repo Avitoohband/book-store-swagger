@@ -1,0 +1,130 @@
+openapi: 3.0.0
+info:
+  title: Book Store API
+  description: This is a book store API
+  contact:
+    email: avitoohband@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local server
+tags:
+  - name: librarians
+    description: librarians can add books to the library
+  - name: users
+    description: Public users
+paths:
+  /books/{shortISBN}:
+    get:
+      tags:
+        - users
+      summary: Borrow and return a book
+      description: Passing ISBN and option header to determined if borrow or return a book.
+      operationId: borrowOrReturnBook
+      parameters:
+        - name: shortISBN
+          in: path
+          description: pass a required IS
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            minimum: 10
+            maximum: 10
+        - name: action
+          in: header
+          description: borrow or return a book
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - borrow
+              - return
+      responses:
+        "200":
+          description: successfully made an action
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+                x-content-type: application/json
+        "201":
+          description: No such book left nor exists in store
+        "400":
+          description: bad input parameter
+      security:
+        - bearerAuth: []
+      x-swagger-router-controller: Users
+  /book:
+    post:
+      tags:
+        - librarians
+      summary: Adds a book
+      description: Adds a book to the library
+      operationId: addBook
+      requestBody:
+        description: Book item to add
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Book"
+      responses:
+        "201":
+          description: book created
+        "400":
+          description: "invalid input, object invalid"
+        "409":
+          description: an existing ISBN already exists
+      security:
+        - bearerAuth: []
+      x-swagger-router-controller: Librarians
+  /token:
+    get:
+      tags:
+        - auth
+      summary: Get a token
+      description: Return a token for open access.
+      operationId: getToken
+      responses:
+        "200":
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Access token to be used for subsequent requests.
+      x-swagger-router-controller: Auth
+components:
+  schemas:
+    Book:
+      required:
+        - isbn
+        - name
+        - author
+      type: object
+      properties:
+        isbn:
+          type: string
+          example: "0756404746"
+        name:
+          type: string
+          example: The Name of the Wind
+        author:
+          type: string
+          example: Patrick Rothfuss
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
